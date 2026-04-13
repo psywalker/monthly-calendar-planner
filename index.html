@@ -1,1 +1,948 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Monthly Calendar Planner</title>
+    <style>
+      :root {
+        --bg: #f4f7fb;
+        --card: #ffffff;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --line: #d7deea;
+        --accent: #2563eb;
+        --accent-soft: #dbeafe;
+        --today: #fff7cc;
+        --danger: #dc2626;
+        --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        --radius: 18px;
+      }
 
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: Inter, Arial, Helvetica, sans-serif;
+        color: var(--text);
+        background: var(--bg);
+      }
+
+      body {
+        padding: 20px;
+      }
+
+      .app {
+        max-width: 1480px;
+        margin: 0 auto;
+      }
+
+      .panel {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+
+      .topbar {
+        padding: 18px;
+        margin-bottom: 16px;
+      }
+
+      .topbar-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .title-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 28px;
+        line-height: 1.15;
+      }
+
+      .subtitle {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      button,
+      input[type="month"] {
+        border: 1px solid var(--line);
+        background: white;
+        color: var(--text);
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-size: 14px;
+      }
+
+      button {
+        cursor: pointer;
+        transition: 0.2s ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+      }
+
+      .primary {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+      }
+
+      .danger {
+        color: var(--danger);
+        border-color: #fecaca;
+        background: #fff5f5;
+      }
+
+      .status {
+        margin-top: 12px;
+        font-size: 14px;
+        color: var(--muted);
+        min-height: 20px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 16px;
+      }
+
+      .sidebar {
+        padding: 18px;
+        height: fit-content;
+      }
+
+      .sidebar h2 {
+        margin: 0 0 8px;
+        font-size: 20px;
+      }
+
+      .sidebar p {
+        margin: 0 0 16px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .template-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .template-item {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px;
+        background: #fafcff;
+      }
+
+      .template-label {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 8px;
+      }
+
+      .template-textarea {
+        width: 100%;
+        min-height: 72px;
+        resize: vertical;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px;
+        font: inherit;
+        line-height: 1.35;
+      }
+
+      .sidebar-actions {
+        display: grid;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .calendar-wrap {
+        padding: 18px;
+        overflow-x: auto;
+      }
+
+      .month-title {
+        font-size: 26px;
+        font-weight: 700;
+        margin: 0 0 14px;
+      }
+
+      .calendar-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+
+      .calendar-table th,
+      .calendar-table td {
+        border: 1px solid var(--line);
+      }
+
+      .calendar-table th {
+        background: #f8fbff;
+        font-size: 14px;
+        padding: 12px 8px;
+        text-align: center;
+      }
+
+      .calendar-cell {
+        height: 180px;
+        vertical-align: top;
+        background: white;
+        position: relative;
+      }
+
+      .calendar-cell.empty {
+        background: #f9fbfd;
+      }
+
+      .calendar-cell.today {
+        background: var(--today);
+      }
+
+      .cell-inner {
+        height: 100%;
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .cell-date {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-height: 24px;
+      }
+
+      .date-number {
+        font-weight: 700;
+        font-size: 15px;
+      }
+
+      .date-badge {
+        font-size: 11px;
+        color: var(--accent);
+        background: var(--accent-soft);
+        border-radius: 999px;
+        padding: 4px 8px;
+      }
+
+      .day-note {
+        width: 100%;
+        flex: 1;
+        min-height: 100px;
+        border: none;
+        outline: none;
+        resize: none;
+        background: transparent;
+        font: inherit;
+        line-height: 1.35;
+        color: var(--text);
+      }
+
+      .day-note::placeholder {
+        color: #9ca3af;
+      }
+
+      .legend {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .legend-box {
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        border: 1px solid var(--line);
+        background: white;
+      }
+
+      .legend-box.today-box {
+        background: var(--today);
+      }
+
+      .hidden-copy-area {
+        position: absolute;
+        left: -99999px;
+        top: -99999px;
+      }
+
+      @media (max-width: 1100px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 768px) {
+        body {
+          padding: 12px;
+        }
+
+        h1 {
+          font-size: 22px;
+        }
+
+        .month-title {
+          font-size: 22px;
+        }
+
+        .calendar-cell {
+          height: 160px;
+        }
+
+        .day-note {
+          min-height: 90px;
+        }
+      }
+
+      @media print {
+        @page {
+          size: A4 landscape;
+          margin: 10mm;
+        }
+
+        body {
+          padding: 0;
+          background: white;
+        }
+
+        .topbar,
+        .sidebar,
+        .legend {
+          display: none !important;
+        }
+
+        .app,
+        .panel,
+        .calendar-wrap {
+          max-width: none;
+          width: 100%;
+          margin: 0;
+          padding: 0;
+          box-shadow: none;
+          border: none;
+          background: white;
+        }
+
+        .month-title {
+          margin: 0 0 8px;
+          font-size: 20px;
+        }
+
+        .calendar-table th {
+          background: #f3f4f6 !important;
+          color: black;
+          padding: 8px 6px;
+          font-size: 12px;
+        }
+
+        .calendar-cell {
+          height: 36mm;
+          background: white !important;
+        }
+
+        .calendar-cell.today {
+          background: #fff9dd !important;
+        }
+
+        .cell-inner {
+          padding: 6px;
+          gap: 4px;
+        }
+
+        .date-number {
+          font-size: 12px;
+        }
+
+        .date-badge {
+          font-size: 9px;
+          padding: 2px 6px;
+        }
+
+        .day-note {
+          font-size: 11px;
+          line-height: 1.25;
+          min-height: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <div class="panel topbar">
+        <div class="topbar-row">
+          <div class="title-wrap">
+            <h1>Monthly Calendar Planner</h1>
+            <div class="subtitle">
+              Автокалендарь на месяц, заметки по дням, шаблоны по дням недели,
+              копирование в Google Docs и печать.
+            </div>
+          </div>
+
+          <div class="controls">
+            <button id="prevMonthBtn" type="button">← Назад</button>
+            <input id="monthPicker" type="month" />
+            <button id="nextMonthBtn" type="button">Вперёд →</button>
+            <button id="todayBtn" type="button">Текущий месяц</button>
+            <button id="copyBtn" type="button">Скопировать для Google Docs</button>
+            <button id="printBtn" class="primary" type="button">Печать / PDF</button>
+            <button id="clearMonthBtn" class="danger" type="button">Очистить месяц</button>
+          </div>
+        </div>
+
+        <div id="status" class="status"></div>
+      </div>
+
+      <div class="layout">
+        <aside class="panel sidebar">
+          <h2>Шаблоны событий</h2>
+          <p>
+            Впиши типовые события по дням недели один раз. Потом нажимай
+            «Заполнить пустые дни», и календарь на выбранный месяц
+            заполнится автоматически.
+          </p>
+
+          <div class="template-list">
+            <div class="template-item">
+              <div class="template-label">Понедельник</div>
+              <textarea class="template-textarea" data-template-day="1"></textarea>
+            </div>
+            <div class="template-item">
+              <div class="template-label">Вторник</div>
+              <textarea class="template-textarea" data-template-day="2"></textarea>
+            </div>
+            <div class="template-item">
+              <div class="template-label">Среда</div>
+              <textarea class="template-textarea" data-template-day="3"></textarea>
+            </div>
+            <div class="template-item">
+              <div class="template-label">Четверг</div>
+              <textarea class="template-textarea" data-template-day="4"></textarea>
+            </div>
+            <div class="template-item">
+              <div class="template-label">Пятница</div>
+              <textarea class="template-textarea" data-template-day="5"></textarea>
+            </div>
+            <div class="template-item">
+              <div class="template-label">Суббота</div>
+              <textarea class="template-textarea" data-template-day="6"></textarea>
+            </div>
+            <div class="template-item">
+              <div class="template-label">Воскресенье</div>
+              <textarea class="template-textarea" data-template-day="0"></textarea>
+            </div>
+          </div>
+
+          <div class="sidebar-actions">
+            <button id="applyTemplateBtn" class="primary" type="button">
+              Заполнить пустые дни
+            </button>
+            <button id="replaceByTemplateBtn" type="button">
+              Перезаписать месяц по шаблону
+            </button>
+          </div>
+        </aside>
+
+        <main class="panel calendar-wrap">
+          <div id="monthTitle" class="month-title"></div>
+
+          <table class="calendar-table" id="calendarTable">
+            <thead>
+              <tr>
+                <th>Пн</th>
+                <th>Вт</th>
+                <th>Ср</th>
+                <th>Чт</th>
+                <th>Пт</th>
+                <th>Сб</th>
+                <th>Вс</th>
+              </tr>
+            </thead>
+            <tbody id="calendarBody"></tbody>
+          </table>
+
+          <div class="legend">
+            <span class="legend-item">
+              <span class="legend-box"></span>
+              Обычный день
+            </span>
+            <span class="legend-item">
+              <span class="legend-box today-box"></span>
+              Сегодня
+            </span>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="hiddenCopyArea" class="hidden-copy-area"></div>
+
+    <script>
+      const STORAGE_KEYS = {
+        notes: "mcp-notes-v1",
+        templates: "mcp-templates-v1",
+      };
+
+      const monthPicker = document.getElementById("monthPicker");
+      const monthTitle = document.getElementById("monthTitle");
+      const calendarBody = document.getElementById("calendarBody");
+      const statusEl = document.getElementById("status");
+      const copyBtn = document.getElementById("copyBtn");
+      const printBtn = document.getElementById("printBtn");
+      const prevMonthBtn = document.getElementById("prevMonthBtn");
+      const nextMonthBtn = document.getElementById("nextMonthBtn");
+      const todayBtn = document.getElementById("todayBtn");
+      const clearMonthBtn = document.getElementById("clearMonthBtn");
+      const applyTemplateBtn = document.getElementById("applyTemplateBtn");
+      const replaceByTemplateBtn = document.getElementById("replaceByTemplateBtn");
+      const hiddenCopyArea = document.getElementById("hiddenCopyArea");
+      const templateFields = Array.from(
+        document.querySelectorAll("[data-template-day]")
+      );
+
+      let notes = loadJSON(STORAGE_KEYS.notes, {});
+      let templates = loadJSON(STORAGE_KEYS.templates, {
+        0: "",
+        1: "",
+        2: "",
+        3: "",
+        4: "",
+        5: "",
+        6: "",
+      });
+
+      function loadJSON(key, fallback) {
+        try {
+          const raw = localStorage.getItem(key);
+          return raw ? JSON.parse(raw) : fallback;
+        } catch {
+          return fallback;
+        }
+      }
+
+      function saveJSON(key, value) {
+        localStorage.setItem(key, JSON.stringify(value));
+      }
+
+      function setStatus(message, isError = false) {
+        statusEl.textContent = message;
+        statusEl.style.color = isError ? "#dc2626" : "#6b7280";
+      }
+
+      function pad(num) {
+        return String(num).padStart(2, "0");
+      }
+
+      function getMonthValue(date) {
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
+      }
+
+      function parseMonthValue(value) {
+        const [year, month] = value.split("-").map(Number);
+        return new Date(year, month - 1, 1);
+      }
+
+      function formatISODate(year, monthIndex, day) {
+        return `${year}-${pad(monthIndex + 1)}-${pad(day)}`;
+      }
+
+      function formatMonthTitle(date) {
+        return new Intl.DateTimeFormat("ru-RU", {
+          month: "long",
+          year: "numeric",
+        }).format(date).replace(/^./, (s) => s.toUpperCase());
+      }
+
+      function getDaysInMonth(date) {
+        return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+      }
+
+      function getMondayFirstOffset(date) {
+        const jsDay = date.getDay();
+        return (jsDay + 6) % 7;
+      }
+
+      function autoResize(el) {
+        el.style.height = "auto";
+        el.style.height = `${el.scrollHeight}px`;
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function isToday(year, monthIndex, day) {
+        const now = new Date();
+        return (
+          now.getFullYear() === year &&
+          now.getMonth() === monthIndex &&
+          now.getDate() === day
+        );
+      }
+
+      function renderTemplates() {
+        templateFields.forEach((field) => {
+          const dayKey = field.dataset.templateDay;
+          field.value = templates[dayKey] || "";
+          field.addEventListener("input", () => {
+            templates[dayKey] = field.value;
+            saveJSON(STORAGE_KEYS.templates, templates);
+          });
+        });
+      }
+
+      function renderCalendar() {
+        const current = parseMonthValue(monthPicker.value);
+        const year = current.getFullYear();
+        const monthIndex = current.getMonth();
+        const daysInMonth = getDaysInMonth(current);
+        const offset = getMondayFirstOffset(current);
+
+        monthTitle.textContent = formatMonthTitle(current);
+        calendarBody.innerHTML = "";
+
+        let day = 1;
+
+        for (let row = 0; row < 6; row++) {
+          const tr = document.createElement("tr");
+
+          for (let col = 0; col < 7; col++) {
+            const td = document.createElement("td");
+            const cellIndex = row * 7 + col;
+
+            if (cellIndex < offset || day > daysInMonth) {
+              td.className = "calendar-cell empty";
+              tr.appendChild(td);
+              continue;
+            }
+
+            const iso = formatISODate(year, monthIndex, day);
+            const wrapper = document.createElement("div");
+            wrapper.className = "cell-inner";
+
+            const header = document.createElement("div");
+            header.className = "cell-date";
+
+            const number = document.createElement("div");
+            number.className = "date-number";
+            number.textContent = day;
+
+            header.appendChild(number);
+
+            if (isToday(year, monthIndex, day)) {
+              td.classList.add("today");
+              const badge = document.createElement("div");
+              badge.className = "date-badge";
+              badge.textContent = "Сегодня";
+              header.appendChild(badge);
+            }
+
+            const textarea = document.createElement("textarea");
+            textarea.className = "day-note";
+            textarea.placeholder = "Добавь событие...";
+            textarea.value = notes[iso] || "";
+            textarea.addEventListener("input", () => {
+              const value = textarea.value;
+              if (value.trim()) {
+                notes[iso] = value;
+              } else {
+                delete notes[iso];
+              }
+              saveJSON(STORAGE_KEYS.notes, notes);
+              autoResize(textarea);
+            });
+
+            wrapper.appendChild(header);
+            wrapper.appendChild(textarea);
+            td.classList.add("calendar-cell");
+            td.appendChild(wrapper);
+            tr.appendChild(td);
+
+            requestAnimationFrame(() => autoResize(textarea));
+            day++;
+          }
+
+          calendarBody.appendChild(tr);
+        }
+
+        setStatus(`Открыт месяц: ${formatMonthTitle(current)}.`);
+      }
+
+      function shiftMonth(step) {
+        const date = parseMonthValue(monthPicker.value);
+        date.setMonth(date.getMonth() + step);
+        monthPicker.value = getMonthValue(date);
+        renderCalendar();
+      }
+
+      function getCurrentMonthDates() {
+        const current = parseMonthValue(monthPicker.value);
+        const year = current.getFullYear();
+        const monthIndex = current.getMonth();
+        const daysInMonth = getDaysInMonth(current);
+        const result = [];
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const date = new Date(year, monthIndex, day);
+          result.push({
+            year,
+            monthIndex,
+            day,
+            jsDay: date.getDay(),
+            iso: formatISODate(year, monthIndex, day),
+          });
+        }
+
+        return result;
+      }
+
+      function applyTemplates({ replaceExisting = false }) {
+        const dates = getCurrentMonthDates();
+        let changed = 0;
+
+        dates.forEach(({ jsDay, iso }) => {
+          const template = (templates[jsDay] || "").trim();
+          const currentValue = (notes[iso] || "").trim();
+
+          if (!template) return;
+
+          if (!replaceExisting && currentValue) return;
+
+          notes[iso] = templates[jsDay];
+          changed++;
+        });
+
+        saveJSON(STORAGE_KEYS.notes, notes);
+        renderCalendar();
+
+        const msg = replaceExisting
+          ? `Месяц перезаписан по шаблону. Обновлено дней: ${changed}.`
+          : `Шаблон применён к пустым дням. Заполнено дней: ${changed}.`;
+
+        setStatus(msg);
+      }
+
+      function clearCurrentMonth() {
+        const current = parseMonthValue(monthPicker.value);
+        const year = current.getFullYear();
+        const monthIndex = current.getMonth();
+        const daysInMonth = getDaysInMonth(current);
+
+        let removed = 0;
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const iso = formatISODate(year, monthIndex, day);
+          if (notes[iso] !== undefined) {
+            delete notes[iso];
+            removed++;
+          }
+        }
+
+        saveJSON(STORAGE_KEYS.notes, notes);
+        renderCalendar();
+        setStatus(`Месяц очищен. Удалено записей: ${removed}.`);
+      }
+
+      function buildHtmlTableForCopy() {
+        const current = parseMonthValue(monthPicker.value);
+        const year = current.getFullYear();
+        const monthIndex = current.getMonth();
+        const daysInMonth = getDaysInMonth(current);
+        const offset = getMondayFirstOffset(current);
+
+        const headers = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+        let html = `
+          <table style="border-collapse: collapse; width: 100%; table-layout: fixed; font-family: Arial, sans-serif; font-size: 12px;">
+            <caption style="caption-side: top; text-align: left; font-weight: bold; font-size: 18px; padding-bottom: 10px;">
+              ${escapeHtml(formatMonthTitle(current))}
+            </caption>
+            <thead>
+              <tr>
+                ${headers
+                  .map(
+                    (h) =>
+                      `<th style="border: 1px solid #cfd8e3; padding: 8px; background: #f3f7fb;">${h}</th>`
+                  )
+                  .join("")}
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        let day = 1;
+
+        for (let row = 0; row < 6; row++) {
+          html += "<tr>";
+
+          for (let col = 0; col < 7; col++) {
+            const cellIndex = row * 7 + col;
+
+            if (cellIndex < offset || day > daysInMonth) {
+              html += `<td style="border: 1px solid #cfd8e3; vertical-align: top; height: 110px; padding: 8px;"></td>`;
+              continue;
+            }
+
+            const iso = formatISODate(year, monthIndex, day);
+            const note = escapeHtml(notes[iso] || "").replace(/\n/g, "<br>");
+            const bg = isToday(year, monthIndex, day) ? "#fff9dd" : "#ffffff";
+
+            html += `
+              <td style="border: 1px solid #cfd8e3; vertical-align: top; height: 110px; padding: 8px; background: ${bg};">
+                <div style="font-weight: bold; margin-bottom: 6px;">${day}</div>
+                <div>${note}</div>
+              </td>
+            `;
+
+            day++;
+          }
+
+          html += "</tr>";
+        }
+
+        html += "</tbody></table>";
+        return html;
+      }
+
+      function buildPlainTextForCopy() {
+        const current = parseMonthValue(monthPicker.value);
+        const title = formatMonthTitle(current);
+        const dates = getCurrentMonthDates();
+
+        const rows = dates.map(({ day, iso }) => {
+          const text = (notes[iso] || "").trim();
+          return text ? `${day}: ${text}` : `${day}:`;
+        });
+
+        return `${title}\n\n${rows.join("\n")}`;
+      }
+
+      async function copyForGoogleDocs() {
+        const html = buildHtmlTableForCopy();
+        const text = buildPlainTextForCopy();
+
+        try {
+          if (navigator.clipboard && window.ClipboardItem) {
+            const item = new ClipboardItem({
+              "text/html": new Blob([html], { type: "text/html" }),
+              "text/plain": new Blob([text], { type: "text/plain" }),
+            });
+
+            await navigator.clipboard.write([item]);
+            setStatus("Таблица скопирована. Вставляй в Google Docs через Ctrl/Cmd + V.");
+            return;
+          }
+
+          if (navigator.clipboard) {
+            await navigator.clipboard.writeText(text);
+            setStatus("Скопирован текстовый вариант календаря.");
+            return;
+          }
+
+          hiddenCopyArea.innerHTML = html;
+          const range = document.createRange();
+          range.selectNode(hiddenCopyArea);
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+          document.execCommand("copy");
+          selection.removeAllRanges();
+
+          setStatus("Таблица скопирована.");
+        } catch (error) {
+          setStatus("Не удалось скопировать таблицу. Попробуй печать в PDF.", true);
+        }
+      }
+
+      prevMonthBtn.addEventListener("click", () => shiftMonth(-1));
+      nextMonthBtn.addEventListener("click", () => shiftMonth(1));
+
+      todayBtn.addEventListener("click", () => {
+        const now = new Date();
+        monthPicker.value = getMonthValue(now);
+        renderCalendar();
+      });
+
+      printBtn.addEventListener("click", () => {
+        setStatus("Открылось окно печати. Там можно сохранить в PDF.");
+        window.print();
+      });
+
+      copyBtn.addEventListener("click", copyForGoogleDocs);
+
+      clearMonthBtn.addEventListener("click", () => {
+        const approved = window.confirm(
+          "Точно очистить все записи только в текущем месяце?"
+        );
+        if (!approved) return;
+        clearCurrentMonth();
+      });
+
+      applyTemplateBtn.addEventListener("click", () => {
+        applyTemplates({ replaceExisting: false });
+      });
+
+      replaceByTemplateBtn.addEventListener("click", () => {
+        const approved = window.confirm(
+          "Перезаписать текущий месяц шаблонами по дням недели?"
+        );
+        if (!approved) return;
+        applyTemplates({ replaceExisting: true });
+      });
+
+      monthPicker.addEventListener("change", renderCalendar);
+
+      function init() {
+        const now = new Date();
+        monthPicker.value = getMonthValue(now);
+        renderTemplates();
+        renderCalendar();
+      }
+
+      init();
+    </script>
+  </body>
+</html>
