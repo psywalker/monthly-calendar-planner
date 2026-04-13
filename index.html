@@ -2,10 +2,7 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Monthly Calendar Planner</title>
     <style>
       :root {
@@ -16,7 +13,6 @@
         --line: #d7deea;
         --accent: #2563eb;
         --accent-soft: #dbeafe;
-        --today: #ffffff;
         --danger: #dc2626;
         --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
         --radius: 18px;
@@ -225,7 +221,7 @@
       }
 
       .calendar-cell.today {
-        background: var(--today);
+        background: white;
       }
 
       .cell-inner {
@@ -280,6 +276,7 @@
         margin-top: 12px;
         color: var(--muted);
         font-size: 13px;
+        align-items: center;
       }
 
       .legend-item {
@@ -296,8 +293,13 @@
         background: white;
       }
 
-      .legend-box.today-box {
-        background: var(--today);
+      .legend-badge {
+        font-size: 11px;
+        color: var(--accent);
+        background: var(--accent-soft);
+        border-radius: 999px;
+        padding: 4px 8px;
+        line-height: 1;
       }
 
       .hidden-copy-area {
@@ -381,7 +383,7 @@
         }
 
         .calendar-cell.today {
-          background: #fff9dd !important;
+          background: white !important;
         }
 
         .cell-inner {
@@ -506,8 +508,8 @@
               Обычный день
             </span>
             <span class="legend-item">
-              <span class="legend-box today-box"></span>
-              Сегодня
+              <span class="legend-badge">Сегодня</span>
+              Текущая дата
             </span>
           </div>
         </main>
@@ -589,7 +591,9 @@
         return new Intl.DateTimeFormat("ru-RU", {
           month: "long",
           year: "numeric",
-        }).format(date).replace(/^./, (s) => s.toUpperCase());
+        })
+          .format(date)
+          .replace(/^./, (s) => s.toUpperCase());
       }
 
       function getDaysInMonth(date) {
@@ -687,11 +691,13 @@
             textarea.value = notes[iso] || "";
             textarea.addEventListener("input", () => {
               const value = textarea.value;
+
               if (value.trim()) {
                 notes[iso] = value;
               } else {
                 delete notes[iso];
               }
+
               saveJSON(STORAGE_KEYS.notes, notes);
               autoResize(textarea);
             });
@@ -745,23 +751,48 @@
         let changed = 0;
 
         dates.forEach(({ jsDay, iso }) => {
-          const template = (templates[jsDay] || "").trim();
-          const currentValue = (notes[iso] || "").trim();
+          const rawTemplate = templates[jsDay] || "";
+          const trimmedTemplate = rawTemplate.trim();
+          const currentRaw = notes[iso] || "";
+          const currentTrimmed = currentRaw.trim();
 
-          if (!template) return;
+          if (replaceExisting) {
+            if (trimmedTemplate) {
+              if (notes[iso] !== rawTemplate) {
+                notes[iso] = rawTemplate;
+                changed++;
+              }
+            } else {
+              if (notes[iso] !== undefined) {
+                delete notes[iso];
+                changed++;
+              }
+            }
 
-          if (!replaceExisting && currentValue) return;
+            return;
+          }
 
-          notes[iso] = templates[jsDay];
-          changed++;
+          if (currentTrimmed) {
+            return;
+          }
+
+          if (trimmedTemplate) {
+            notes[iso] = rawTemplate;
+            changed++;
+          } else {
+            if (notes[iso] !== undefined) {
+              delete notes[iso];
+              changed++;
+            }
+          }
         });
 
         saveJSON(STORAGE_KEYS.notes, notes);
         renderCalendar();
 
         const msg = replaceExisting
-          ? `Месяц перезаписан по шаблону. Обновлено дней: ${changed}.`
-          : `Шаблон применён к пустым дням. Заполнено дней: ${changed}.`;
+          ? `Месяц перезаписан по шаблону. Изменено дней: ${changed}.`
+          : `Шаблон применён к пустым дням. Обновлено дней: ${changed}.`;
 
         setStatus(msg);
       }
@@ -828,11 +859,17 @@
 
             const iso = formatISODate(year, monthIndex, day);
             const note = escapeHtml(notes[iso] || "").replace(/\n/g, "<br>");
-            const bg = isToday(year, monthIndex, day) ? "#fff9dd" : "#ffffff";
 
             html += `
-              <td style="border: 1px solid #cfd8e3; vertical-align: top; height: 110px; padding: 8px; background: ${bg};">
-                <div style="font-weight: bold; margin-bottom: 6px;">${day}</div>
+              <td style="border: 1px solid #cfd8e3; vertical-align: top; height: 110px; padding: 8px; background: #ffffff;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px;">
+                  <div style="font-weight: bold;">${day}</div>
+                  ${
+                    isToday(year, monthIndex, day)
+                      ? `<div style="font-size: 11px; color: #2563eb; background: #dbeafe; border-radius: 999px; padding: 4px 8px;">Сегодня</div>`
+                      : ""
+                  }
+                </div>
                 <div>${note}</div>
               </td>
             `;
