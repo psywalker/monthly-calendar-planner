@@ -14,6 +14,7 @@
         --accent: #2563eb;
         --accent-soft: #dbeafe;
         --danger: #dc2626;
+        --row-alt: #f3f5f8;
         --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
         --radius: 18px;
       }
@@ -209,6 +210,10 @@
         text-align: center;
       }
 
+      .calendar-row.alt .calendar-cell {
+        background: var(--row-alt);
+      }
+
       .calendar-cell {
         height: 180px;
         vertical-align: top;
@@ -217,11 +222,11 @@
       }
 
       .calendar-cell.empty {
-        background: #f9fbfd;
+        background: inherit;
       }
 
       .calendar-cell.today {
-        background: white;
+        background: white !important;
       }
 
       .cell-inner {
@@ -291,6 +296,10 @@
         border-radius: 4px;
         border: 1px solid var(--line);
         background: white;
+      }
+
+      .legend-box.alt-box {
+        background: var(--row-alt);
       }
 
       .legend-badge {
@@ -375,6 +384,10 @@
           color: black;
           padding: 8px 6px;
           font-size: 12px;
+        }
+
+        .calendar-row.alt .calendar-cell {
+          background: #f3f5f8 !important;
         }
 
         .calendar-cell {
@@ -505,7 +518,11 @@
           <div class="legend">
             <span class="legend-item">
               <span class="legend-box"></span>
-              Обычный день
+              Белая строка
+            </span>
+            <span class="legend-item">
+              <span class="legend-box alt-box"></span>
+              Серая строка
             </span>
             <span class="legend-item">
               <span class="legend-badge">Сегодня</span>
@@ -653,6 +670,7 @@
 
         for (let row = 0; row < 6; row++) {
           const tr = document.createElement("tr");
+          tr.className = row % 2 === 1 ? "calendar-row alt" : "calendar-row";
 
           for (let col = 0; col < 7; col++) {
             const td = document.createElement("td");
@@ -779,11 +797,9 @@
           if (trimmedTemplate) {
             notes[iso] = rawTemplate;
             changed++;
-          } else {
-            if (notes[iso] !== undefined) {
-              delete notes[iso];
-              changed++;
-            }
+          } else if (notes[iso] !== undefined) {
+            delete notes[iso];
+            changed++;
           }
         });
 
@@ -847,21 +863,23 @@
         let day = 1;
 
         for (let row = 0; row < 6; row++) {
+          const rowBg = row % 2 === 1 ? "#f3f5f8" : "#ffffff";
           html += "<tr>";
 
           for (let col = 0; col < 7; col++) {
             const cellIndex = row * 7 + col;
 
             if (cellIndex < offset || day > daysInMonth) {
-              html += `<td style="border: 1px solid #cfd8e3; vertical-align: top; height: 110px; padding: 8px;"></td>`;
+              html += `<td style="border: 1px solid #cfd8e3; vertical-align: top; height: 110px; padding: 8px; background: ${rowBg};"></td>`;
               continue;
             }
 
             const iso = formatISODate(year, monthIndex, day);
             const note = escapeHtml(notes[iso] || "").replace(/\n/g, "<br>");
+            const bg = isToday(year, monthIndex, day) ? "#ffffff" : rowBg;
 
             html += `
-              <td style="border: 1px solid #cfd8e3; vertical-align: top; height: 110px; padding: 8px; background: #ffffff;">
+              <td style="border: 1px solid #cfd8e3; vertical-align: top; height: 110px; padding: 8px; background: ${bg};">
                 <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px;">
                   <div style="font-weight: bold;">${day}</div>
                   ${
@@ -951,10 +969,6 @@
       copyBtn.addEventListener("click", copyForGoogleDocs);
 
       clearMonthBtn.addEventListener("click", () => {
-        const approved = window.confirm(
-          "Точно очистить все записи только в текущем месяце?"
-        );
-        if (!approved) return;
         clearCurrentMonth();
       });
 
@@ -963,10 +977,6 @@
       });
 
       replaceByTemplateBtn.addEventListener("click", () => {
-        const approved = window.confirm(
-          "Перезаписать текущий месяц шаблонами по дням недели?"
-        );
-        if (!approved) return;
         applyTemplates({ replaceExisting: true });
       });
 
